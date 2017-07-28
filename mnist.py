@@ -2,6 +2,7 @@
 from keras.datasets.mnist import load_data
 import tensorflow as tf
 import numpy as np
+import keras
 
 def create_model():
     num_classes = 10
@@ -11,7 +12,7 @@ def create_model():
     depth = 16
 
     x = tf.placeholder(tf.float32, [None, img_rows, img_cols, img_channel])
-    y = tf.placeholder(tf.int32, [None])
+    y = tf.placeholder(tf.int64, [None])
 
     W = []
     b = []
@@ -32,20 +33,21 @@ def create_model():
     vals.append(tf.nn.conv2d(vals[-1], W[1], strides=[1,1,1,1], padding='VALID'))
     vals.append(tf.nn.bias_add(vals[-1], b[1]))
     vals.append(tf.reshape(vals[-1], [-1, num_classes]))
+    pred = tf.argmax(vals[-1], axis=-1)
     vals.append(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=vals[-1], labels=y))
-    vals.append(tf.reduce_mean(vals[-1], axis=-1))
+    vals.append(tf.reduce_mean(vals[-1]))
 
-    return vals
+    return vals, pred
 
 
-def train(vals):
+def train(vals, pred):
     (x_train, y_train), (x_test, y_test) = load_data()
     x_train = np.expand_dims(x_train, axis=-1).astype(np.float32)
     x_test = np.expand_dims(x_test, axis=-1).astype(np.float32)
     x_train = x_train / 255 - 0.5
     x_test = x_test / 255 - 0.5
 
-    training_epochs = 1
+    training_epochs = 25
     num_train_examples = len(x_train)
     batch_size = 100
     learning_rate = .01
@@ -67,19 +69,29 @@ def train(vals):
                 end = min((i+1)*batch_size, num_train_examples)
 
                 batch_x, batch_y = x_train[start:end], y_train[start:end]
+
+                #batch_y = keras.utils.to_categorical(batch_y, 10)
                 # Run optimization op (backprop) and cost op (to get loss value)
                 f = {vals[1]: batch_x, vals[0]: batch_y}
                 _, c = sess.run([optimizer, vals[-1]], feed_dict=f)
                 # Compute average loss
                 avg_cost += c / total_batch
-                print avg_cost
+            print avg_cost
 
             # Display logs per epoch step
             if epoch % display_step == 0:
                 print("Epoch:", '%04d' % (epoch + 1), "cost=", \
                       "{:.9f}".format(avg_cost))
+
+
         print("Optimization Finished!")
+        # Test model
+        correct_prediction = tf.equal(pred, y_test)
+        # Calculate accuracy
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+        print("Accuracy:", accuracy.eval({vals[1]: x_test, vals[0]: y_test}))
 
 if __name__ == '__main__':
-    vals = create_model()
-    train(vals)
+    vals, pred = create_model()
+    train(vals, pred)

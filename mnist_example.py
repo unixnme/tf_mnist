@@ -16,10 +16,18 @@ x = tf.placeholder(tf.float32, [None, 28, 28, 1]) # mnist data image of shape 28
 y = tf.placeholder(tf.int64, [None]) # 0-9 digits recognition => 10 classes
 
 # Set model weights
-W = tf.Variable(tf.random_normal([28,28,1,10]))
-b = tf.Variable(tf.zeros([10]))
+W = tf.Variable(tf.random_normal([28,28,1,16]))
+b = tf.Variable(tf.zeros([16]))
 
-temp = tf.nn.conv2d(x, W, [1,1,1,1], padding='VALID') + b
+W2 = tf.Variable(tf.random_normal([14,14,16,10]))
+b2 = tf.Variable(tf.zeros([10]))
+
+
+temp = tf.nn.conv2d(x, W, [1,1,1,1], padding='SAME') + b
+temp = tf.nn.elu(temp)
+temp = tf.nn.max_pool(temp, [1,2,2,1], [1,2,2,1], padding='SAME')
+
+temp = tf.nn.conv2d(temp, W2, [1,1,1,1], padding='VALID') + b2
 temp = tf.reshape(temp, [-1, 10])
 pred = tf.argmax(temp, 1)
 cost = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=temp))
