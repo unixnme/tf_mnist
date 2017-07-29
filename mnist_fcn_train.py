@@ -46,9 +46,9 @@ def create_model(_W=None, _b=None):
     vals.append(tf.nn.max_pool(vals[-1], ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME'))
 
     vals.append(tf.nn.conv2d(vals[-1], W[2], strides=[1,1,1,1], padding='SAME') + b[2])
-    vals.append(tf.reshape(vals[-1], [-1, num_classes]))
+    vals.append(tf.reshape(vals[-1], [-1, img_rows*img_cols/16, num_classes]))
 
-    vals.append(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=vals[-1], labels=tf.reshape(y, [-1])))
+    vals.append(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=vals[-1], labels=tf.reshape(y, [-1, img_rows*img_cols/16])))
     vals.append(tf.reduce_mean(vals[-1]))
 
     return vals, W, b
@@ -61,7 +61,7 @@ def train(vals, W, b):
     x_train = x_train / 255
     x_test = x_test / 255
 
-    training_epochs = 1
+    training_epochs = 10
     num_train_examples = len(x_train)
     batch_size = 100
     learning_rate = .01
@@ -152,7 +152,7 @@ def get_batch(x, y, batch_size):
 
 
 if __name__ == '__main__':
-    W, b = load_weights()
-    vals, W, b = create_model(W, b)
+    #W, b = load_weights()
+    vals, W, b = create_model()
     W, b = train(vals, W, b)
     save_weights(W, b)
