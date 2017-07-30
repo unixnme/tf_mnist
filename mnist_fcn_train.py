@@ -63,7 +63,7 @@ def train(vals, W, b):
 
     training_epochs = 10
     num_train_examples = len(x_train)
-    batch_size = 100
+    batch_size = 128
     learning_rate = .01
     display_step = 1
 
@@ -148,7 +148,7 @@ def get_batch(x, y, batch_size):
             for i in range(len(idx)):
                 y_batch[i,2:5,2:5] = temp[i]
 
-        yield x_batch, y_batch
+            yield x_batch, y_batch
 
 
 if __name__ == '__main__':
