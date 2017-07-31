@@ -22,10 +22,10 @@ def create_model(_W=None, _b=None):
     W = []
     b = []
     if not _W:
-        W.append(tf.Variable(tf.random_normal([3, 3, img_channel, depth1])))
-        W.append(tf.Variable(tf.random_normal([3, 3, depth1, depth2])))
-        W.append(tf.Variable(tf.random_normal([7, 7, depth2, depth3])))
-        W.append(tf.Variable(tf.random_normal([1, 1, depth3, num_classes])))
+        W.append(tf.Variable(tf.zeros([3, 3, img_channel, depth1])))
+        W.append(tf.Variable(tf.zeros([3, 3, depth1, depth2])))
+        W.append(tf.Variable(tf.zeros([7, 7, depth2, depth3])))
+        W.append(tf.Variable(tf.zeros([1, 1, depth3, num_classes])))
     else:
         W.append(tf.Variable(_W[0]))
         W.append(tf.Variable(_W[1]))
@@ -33,10 +33,10 @@ def create_model(_W=None, _b=None):
         W.append(tf.Variable(_W[3]))
 
     if not _b:
-        b.append(tf.Variable(tf.random_normal([depth1])))
-        b.append(tf.Variable(tf.random_normal([depth2])))
-        b.append(tf.Variable(tf.random_normal([depth3])))
-        b.append(tf.Variable(tf.random_normal([num_classes])))
+        b.append(tf.Variable(tf.zeros([depth1])))
+        b.append(tf.Variable(tf.zeros([depth2])))
+        b.append(tf.Variable(tf.zeros([depth3])))
+        b.append(tf.Variable(tf.zeros([num_classes])))
     else:
         b.append(tf.Variable(_b[0]))
         b.append(tf.Variable(_b[1]))
@@ -85,7 +85,8 @@ def train(vals, W, b):
     x_test, y_test = next(gen_test)
 
     pred = tf.argmax(vals[-4], axis=-1)
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(vals[-1])
+    optimizer = tf.train.AdamOptimizer().minimize(vals[-1])
+    #optimizer = tf.train.AdadeltaOptimizer().minimize(vals[-1])
 
     init = tf.global_variables_initializer()
     with tf.Session() as sess:
