@@ -3,14 +3,18 @@ import tensorflow as tf
 import numpy as np
 import keras
 import pickle
+# import os
+# os.environ['TF_CPP_MIN_VLOG_LEVEL']='3'
+
 
 def create_model(_W=None, _b=None):
     num_classes = 11
     img_rows = 28
     img_cols = 28
     img_channel = 1
-    depth1 = 16
-    depth2 = 32
+    depth1 = 32
+    depth2 = 64
+    depth3 = 128
 
     x = tf.placeholder(tf.float32, [None, img_rows, img_cols, img_channel])
     y = tf.placeholder(tf.int64, [None, img_rows/4, img_cols/4])
@@ -20,20 +24,24 @@ def create_model(_W=None, _b=None):
     if not _W:
         W.append(tf.Variable(tf.random_normal([3, 3, img_channel, depth1])))
         W.append(tf.Variable(tf.random_normal([3, 3, depth1, depth2])))
-        W.append(tf.Variable(tf.random_normal([img_rows / 4, img_cols / 4, depth2, num_classes])))
+        W.append(tf.Variable(tf.random_normal([7, 7, depth2, depth3])))
+        W.append(tf.Variable(tf.random_normal([1, 1, depth3, num_classes])))
     else:
         W.append(tf.Variable(_W[0]))
         W.append(tf.Variable(_W[1]))
         W.append(tf.Variable(_W[2]))
+        W.append(tf.Variable(_W[3]))
 
     if not _b:
         b.append(tf.Variable(tf.random_normal([depth1])))
         b.append(tf.Variable(tf.random_normal([depth2])))
+        b.append(tf.Variable(tf.random_normal([depth3])))
         b.append(tf.Variable(tf.random_normal([num_classes])))
     else:
         b.append(tf.Variable(_b[0]))
         b.append(tf.Variable(_b[1]))
         b.append(tf.Variable(_b[2]))
+        b.append(tf.Variable(_b[3]))
 
     vals = [y, x]
 
@@ -44,8 +52,13 @@ def create_model(_W=None, _b=None):
     vals.append(tf.nn.conv2d(vals[-1], W[1], strides=[1,1,1,1], padding='SAME') + b[1])
     vals.append(tf.nn.elu(vals[-1]))
     vals.append(tf.nn.max_pool(vals[-1], ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME'))
+    vals.append(tf.nn.dropout(vals[-1], 0.75))
 
     vals.append(tf.nn.conv2d(vals[-1], W[2], strides=[1,1,1,1], padding='SAME') + b[2])
+    vals.append(tf.nn.elu(vals[-1]))
+    vals.append(tf.nn.dropout(vals[-1], 0.5))
+
+    vals.append(tf.nn.conv2d(vals[-1], W[3], strides=[1,1,1,1], padding='VALID') + b[3])
     vals.append(tf.reshape(vals[-1], [-1, img_rows*img_cols/16, num_classes]))
 
     vals.append(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=vals[-1], labels=tf.reshape(y, [-1, img_rows*img_cols/16])))
@@ -84,6 +97,7 @@ def train(vals, W, b):
             total_batch = int(num_train_examples / batch_size)
             # Loop over all batches
             for i in range(total_batch):
+                # print i, 'out of', total_batch
                 batch_x, batch_y = next(gen)
 
                 # Run optimization op (backprop) and cost op (to get loss value)
